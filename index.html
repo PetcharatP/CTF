@@ -1,0 +1,405 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Quiz — Dark Single Input</title>
+  <style>
+    :root{
+      --bg:#0b1020;
+      --panel:#0f1724;
+      --card:#0b1220;
+      --muted:#94a3b8;
+      --accent:#3b82f6;
+      --success:#10b981;
+      --danger:#ef4444;
+      --glass: rgba(255,255,255,0.04);
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+      background:
+        radial-gradient(800px 400px at 10% 10%, rgba(59,130,246,0.06), transparent 8%),
+        radial-gradient(700px 300px at 90% 90%, rgba(16,185,129,0.03), transparent 6%),
+        var(--bg);
+      color:#e6eef8;
+      padding:28px;
+      -webkit-font-smoothing:antialiased;
+      -moz-osx-font-smoothing:grayscale;
+    }
+
+    .container{
+      max-width:1100px;
+      margin:0 auto;
+      display:grid;
+      grid-template-columns:1fr 360px;
+      gap:18px;
+      align-items:start;
+    }
+
+    header{
+      grid-column:1/-1;
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      margin-bottom:10px;
+    }
+    h1{margin:0;font-size:18px}
+    .muted{color:var(--muted);font-size:13px}
+
+    .card{
+      background: linear-gradient(180deg, rgba(255,255,255,0.02), transparent);
+      border:1px solid rgba(255,255,255,0.03);
+      padding:16px;
+      border-radius:12px;
+      box-shadow: 0 6px 24px rgba(2,6,23,0.6);
+    }
+
+    /* top answer input */
+    .answer-area{
+      display:flex;
+      gap:10px;
+      align-items:center;
+      margin-bottom:14px;
+    }
+    .answer-area input{
+      flex:1;
+      padding:12px 14px;
+      border-radius:10px;
+      border:1px solid rgba(255,255,255,0.04);
+      background: rgba(255,255,255,0.02);
+      color: #e6eef8;
+      font-size:15px;
+    }
+    .btn{
+      padding:10px 14px;
+      border-radius:10px;
+      border:0;
+      cursor:pointer;
+      font-weight:600;
+    }
+    .btn-primary{ background: linear-gradient(90deg,var(--accent), #60a5fa); color:#021124; }
+    .btn-muted{ background: transparent; border:1px solid rgba(255,255,255,0.03); color:var(--muted); }
+
+    /* question list */
+    .q-list{ display:flex; flex-direction:column; gap:10px; }
+    .q-item{
+      padding:12px;
+      border-radius:10px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.015), transparent);
+      border:1px solid rgba(255,255,255,0.02);
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+    }
+    .q-top{ display:flex; justify-content:space-between; align-items:center; gap:10px; }
+    .q-text{ font-size:15px; color:#e6eef8; margin:0; }
+    .q-meta{ color:var(--muted); font-size:13px; }
+    .q-item.correct{
+      border-color: rgba(16,185,129,0.25);
+      background: linear-gradient(180deg, rgba(16,185,129,0.06), rgba(16,185,129,0.02));
+      box-shadow: 0 6px 18px rgba(16,185,129,0.06);
+    }
+
+    .toast{
+  position:fixed;
+  left:50%;
+  transform:translateX(-50%);
+  top:28px; /* Changed from bottom:28px to top:28px */
+  z-index:999;
+  min-width:260px;
+  text-align:center;
+  padding:10px 14px;
+  border-radius:10px;
+  font-weight:700;
+  transition: opacity 0.3s ease; /* Added transition for smooth fade */
+    }
+    .toast.success{ background: rgba(16,185,129,0.12); color:var(--success); border:1px solid rgba(16,185,129,0.18); }
+    .toast.error{ background: rgba(239,68,68,0.08); color:var(--danger); border:1px solid rgba(239,68,68,0.12); }
+    .toast.warn{ background: rgba(250,204,21,0.06); color:#f59e0b; border:1px solid rgba(250,204,21,0.08); }
+
+    /* admin panel small */
+    .admin-header{ display:flex; gap:8px; align-items:center; margin-bottom:8px; }
+    input[type=text], textarea{ width:100%; padding:8px 10px; border-radius:8px; border:1px solid rgba(255,255,255,0.03); background: rgba(255,255,255,0.02); color:#e6eef8; }
+    textarea{ min-height:80px; resize:vertical; }
+    .admin-list{ max-height:300px; overflow:auto; padding-right:6px; margin-top:8px; color:var(--muted); font-size:14px; }
+    .small-btn{ padding:6px 8px; border-radius:8px; font-size:13px; }
+
+    @media (max-width:980px){
+      .container{ grid-template-columns:1fr; }
+      header{ flex-direction:column; align-items:flex-start; gap:10px; }
+    }
+  </style>
+</head>
+<body>
+  <div style="max-width:1100px;margin:0 auto;padding:0 18px;">
+    <header>
+      <div>
+        <h1>Quiz — Dark Mode</h1>
+        <div class="muted">พิมพ์คำตอบที่ช่องด้านบนแล้วกด Submit เพื่อเช็คคำตอบทั้งหมด</div>
+      </div>
+      <div>
+        <button id="btn-admin-toggle" class="btn btn-muted">Admin</button>
+      </div>
+    </header>
+
+    <div class="container">
+      <!-- MAIN: QUESTIONS -->
+      <main class="card">
+        <div style="display:flex;flex-direction:column;">
+          <div class="answer-area">
+            <input id="global-answer" placeholder="พิมพ์คำตอบเดียว แล้วกด Submit — คำตอบจะถูกตรวจกับทุกข้อ" autocomplete="off" />
+            <button id="btn-submit" class="btn btn-primary">Submit</button>
+            <button id="btn-reset-highlights" class="btn btn-muted" title="ล้างสถานะคำตอบถูก">Reset</button>
+          </div>
+
+          <div id="question-list" class="q-list"></div>
+        </div>
+      </main>
+
+      <!-- ADMIN PANEL (hidden) -->
+      <aside class="card" id="admin-panel" style="display:none;">
+        <div class="admin-header">
+          <input id="admin-password" type="text" placeholder="รหัสผ่าน admin" style="flex:1" />
+          <button id="btn-unlock" class="btn small-btn btn-primary">Unlock</button>
+        </div>
+        <div id="admin-status" class="muted" style="margin-bottom:8px">Status: Locked</div>
+
+        <div id="admin-controls" style="display:none;">
+          <label class="muted">คำถาม</label>
+          <textarea id="q-text" placeholder="พิมพ์คำถาม..."></textarea>
+          <label class="muted" style="margin-top:6px">คำตอบที่ถูกต้อง</label>
+          <input id="q-answer" placeholder="คำตอบที่ถูกต้อง (เช่น 'กรุงเทพมหานคร')" />
+          <div style="display:flex;gap:8px;margin-top:8px">
+            <button id="btn-add" class="btn btn-primary">Add</button>
+            <button id="btn-save" class="btn btn-muted">Save (to localStorage)</button>
+            <button id="btn-clear-admin" class="btn btn-muted">Clear</button>
+          </div>
+
+          <div class="admin-list" id="questions-admin-list"></div>
+          <div style="margin-top:8px;display:flex;gap:8px;">
+            <button id="btn-export" class="btn btn-muted small-btn">Export JSON</button>
+            <button id="btn-import" class="btn btn-muted small-btn">Import JSON</button>
+            <button id="btn-wipe" class="btn btn-danger small-btn">Wipe All</button>
+          </div>
+        </div>
+      </aside>
+    </div>
+  </div>
+
+  <!-- toast -->
+  <div id="toast-container" style="display:block;pointer-events:none"></div>
+
+  <script>
+    // Add this code at the beginning of your script section
+    // Disable right-click
+    document.addEventListener('contextmenu', (e) => e.preventDefault());
+
+    // Disable F12, Ctrl+Shift+I, Ctrl+Shift+J, Ctrl+U
+    document.addEventListener('keydown', function(e) {
+    if (
+        // F12
+        e.key === 'F12' ||
+        // Ctrl+Shift+I, Ctrl+Shift+J, Ctrl+Shift+C
+        (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'J' || e.key === 'C')) ||
+        // Ctrl+U
+        (e.ctrlKey && e.key === 'u')
+    ) {
+        e.preventDefault();
+        return false;
+    }
+    });
+
+    // Disable devtools
+    function disableDevTools() {
+    if (window.devtools?.isOpen || window.devtools?.orientation) {
+        window.location.href = 'about:blank';
+    }
+    }
+
+    // Check for DevTools
+    setInterval(disableDevTools, 1000);
+
+    // Additional protection against dev tools
+    (function() {
+    let devtools = function() {};
+    devtools.toString = function() {
+        window.location.href = 'about:blank';
+    }
+    console.log('%c', devtools);
+    })();
+
+    // Clear console
+    console.clear();
+    // Disable console.log and other console methods
+    console.log = console.warn = console.error = function() {};
+    // --- storage keys ---
+    const QUESTIONS_KEY = 'quiz_questions_v1_dark';
+    const WRONGS_KEY = 'quiz_wrong_submissions_v1';
+
+    const $ = id => document.getElementById(id);
+    const norm = s => String(s || '').trim().toLowerCase();
+
+    // Normalize Windows path: remove trailing backslash, lowercase
+    const normalizePath = s => s.replace(/\\+$/,'').toLowerCase();
+
+    function loadQuestions(){ try { return JSON.parse(localStorage.getItem(QUESTIONS_KEY) || '[]'); } catch(e){ return []; } }
+    function saveQuestions(qs){ localStorage.setItem(QUESTIONS_KEY, JSON.stringify(qs || [])); }
+    function loadWrongs(){ try { return JSON.parse(localStorage.getItem(WRONGS_KEY) || '[]'); } catch(e){ return []; } }
+    function saveWrongs(a){ localStorage.setItem(WRONGS_KEY, JSON.stringify(a || [])); }
+
+    let questions = loadQuestions();
+    if(!questions || questions.length===0){
+        questions = [
+        { id:'q_ip_decomm', question:"What was the IP address of the decommissioned machine used by the attacker to start a chat session with MSP-HELPDESK-AI? (IPv4 address)", answer:"10.0.69.45", solved:false, submissions:[] },
+        { id:'q_hostname', question:"What was the hostname of the decommissioned machine? (string)", answer:"WATSON-ALPHA-2", solved:false, submissions:[] },
+        { id:'q_first_msg', question:"What was the first message the attacker sent to the AI chatbot? (string)", answer:"Hello Old Friend", solved:false, submissions:[] },
+        { id:'q_20250819_120206', question:"When did the attacker's prompt injection attack make MSP-HELPDESK-AI leak remote management tool info? (YYYY-MM-DD HH:MM:SS)", answer:"2025-08-19 12:02:06", solved:false, submissions:[] },
+        { id:'q_565963039_1', question:"What is the Remote management tool Device ID and password? (IDwithoutspace:Password)", answer:"565963039:CogWork_Central_97&65", solved:false, submissions:[] },
+        { id:'q_last_msg_1', question:"What was the last message the attacker sent to MSP-HELPDESK-AI? (string)", answer:"JM WILL BE BACK", solved:false, submissions:[] },
+        { id:'q_remote_access_1', question:"When did the attacker remotely access Cogwork Central Workstation? (YYYY-MM-DD HH:MM:SS)", answer:"2025-08-20 09:58:25", solved:false, submissions:[] },
+        { id:'q_rmm_account_1', question:"What was the RMM Account name used by the attacker? (string)", answer:"James Moriarty", solved:false, submissions:[] },
+        { id:'q_internal_ip_1', question:"What was the machine's internal IP address from which the attacker connected? (IPv4 address)", answer:"192.168.69.213", solved:false, submissions:[] },
+        { id:'q_tools_path_1', question:"The attacker brought some tools to the compromised workstation to achieve its objectives. Under which path were these tools staged? (C:\\\\FOLDER\\\\PATH\\\\)", answer:"C:\\Windows\\Temp\\safe", solved:false, submissions:[] }
+        ];
+      saveQuestions(questions);
+    }
+
+    let wrongSubmissions = loadWrongs();
+
+    function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]); }
+
+    function renderList(){
+    const list = $('question-list');
+    list.innerHTML = '';
+    if(!questions || questions.length===0){ list.innerHTML='<div class="muted">ยังไม่มีคำถาม</div>'; return; }
+    questions.forEach(q=>{
+        const item=document.createElement('div');
+        item.className='q-item'+(q.solved?' correct':'');
+        item.id='qitem-'+q.id;
+        const top=document.createElement('div'); top.className='q-top';
+        const txt=document.createElement('div'); 
+        // Remove ID and only show question and answer if solved
+        txt.innerHTML=`<div class="q-text">${escapeHtml(q.question)}</div>
+                    ${q.solved ? `<div class="q-answer" style="color:var(--success);font-size:14px;margin-top:4px">Answer: ${escapeHtml(q.answer)}</div>` : ''}`;
+        top.appendChild(txt);
+
+        const right=document.createElement('div'); right.style.display='flex'; right.style.gap='8px'; right.style.alignItems='center';
+        if(q.solved){ const ok=document.createElement('div'); ok.textContent='✔'; ok.style.color='var(--success)'; ok.title='ถูกแล้ว'; right.appendChild(ok); }
+        top.appendChild(right);
+
+        item.appendChild(top);
+        list.appendChild(item);
+    });
+    }
+
+    function toast(text,type='success',duration=2200){
+      const container=$('toast-container'); const div=document.createElement('div');
+      div.className='toast '+(type==='success'?'success':type==='error'?'error':'warn'); div.textContent=text; div.style.pointerEvents='auto'; container.appendChild(div);
+      setTimeout(()=>{ div.style.opacity='0'; setTimeout(()=>div.remove(),300); }, duration);
+    }
+
+    $('btn-submit').addEventListener('click', ()=>handleSubmit());
+    $('global-answer').addEventListener('keydown', (e)=>{ if(e.key==='Enter'){ e.preventDefault(); handleSubmit(); } });
+
+    function handleSubmit(){
+      const raw=$('global-answer').value.trim(); if(!raw){ toast('กรุณาพิมพ์คำตอบ','warn'); return; }
+      let value=norm(raw);
+
+      // normalize for Windows path answers
+      if(value.startsWith('c:\\')) value=normalizePath(raw);
+
+      // check duplicates
+      const usedInQ = questions.some(q => (q.submissions||[]).some(s=>normalizePath(s)===value));
+      const usedInWrong = wrongSubmissions.some(s=>normalizePath(s)===value);
+      if(usedInQ||usedInWrong){ toast('You are already use this Answer','warn'); $('global-answer').value=''; return; }
+
+      // check correct
+      const matched = questions.find(q=>{
+        let ans = norm(q.answer);
+        if(ans.startsWith('c:\\')) ans=normalizePath(ans);
+        return ans===value;
+      });
+
+      if(matched){
+        matched.submissions.push(value); matched.solved=true;
+        saveQuestions(questions); renderList();
+        toast('Answer Correct!','success',2000);
+      } else {
+        wrongSubmissions.push(value); saveWrongs(wrongSubmissions);
+        toast('Answer not correct!','error',2000);
+      }
+      $('global-answer').value='';
+    }
+
+    $('btn-reset-highlights').addEventListener('click', ()=>{
+      questions.forEach(q=>{ q.solved=false; q.submissions=[]; });
+      wrongSubmissions=[]; saveQuestions(questions); saveWrongs(wrongSubmissions); renderList(); toast('Reset done','warn',1200);
+    });
+
+    // ADMIN panel
+    $('btn-admin-toggle').addEventListener('click', ()=>{$('admin-panel').style.display=$('admin-panel').style.display==='none'?'block':'none';});
+    $('btn-unlock').addEventListener('click', ()=>{
+      const pw=$('admin-password').value||''; if(pw==='15102545'){$('admin-controls').style.display='block';$('admin-status').textContent='Status: Unlocked'; renderAdminList();}
+      else{$('admin-status').textContent='Status: Wrong password';}
+      setTimeout(()=>{$('admin-password').value='';},300);
+    });
+
+    $('btn-add').addEventListener('click', ()=>{
+      const qtext=$('q-text').value.trim(), qans=$('q-answer').value.trim(); if(!qtext||!qans){ toast('กรุณากรอกคำถามและคำตอบ','warn'); return; }
+      const obj={id:'q_'+Date.now(),question:qtext,answer:qans,solved:false,submissions:[]};
+      questions.push(obj); saveQuestions(questions); $('q-text').value=''; $('q-answer').value=''; renderList(); renderAdminList(); toast('Question added','success',1200);
+    });
+
+    $('btn-save').addEventListener('click', ()=>{ saveQuestions(questions); toast('Saved to localStorage','success',1000); });
+    $('btn-clear-admin').addEventListener('click', ()=>{$('q-text').value=''; $('q-answer').value=''; });
+
+    function renderAdminList(){
+      const el=$('questions-admin-list'); el.innerHTML='';
+      questions.forEach(q=>{
+        const row=document.createElement('div'); row.style.display='flex'; row.style.justifyContent='space-between'; row.style.alignItems='center'; row.style.padding='6px 0';
+        const left=document.createElement('div'); left.innerHTML=`<div style="font-size:14px">${escapeHtml(q.question)}</div><div style="color:var(--muted);font-size:12px">Answer: ${escapeHtml(q.answer)}</div>`;
+        const actions=document.createElement('div'); actions.style.display='flex'; actions.style.gap='6px';
+        const btnEdit=document.createElement('button'); btnEdit.textContent='Edit'; btnEdit.className='small-btn btn-muted';
+        const btnDel=document.createElement('button'); btnDel.textContent='Delete'; btnDel.className='small-btn btn-danger';
+        actions.appendChild(btnEdit); actions.appendChild(btnDel); row.appendChild(left); row.appendChild(actions); el.appendChild(row);
+
+        btnEdit.addEventListener('click', ()=>{
+          const newQ=prompt('Edit question text:', q.question); if(newQ===null) return;
+          const newA=prompt('Edit correct answer:', q.answer); if(newA===null) return;
+          q.question=newQ.trim(); q.answer=newA.trim(); saveQuestions(questions); renderList(); renderAdminList(); toast('Updated','success',900);
+        });
+
+        btnDel.addEventListener('click', ()=>{
+          if(!confirm('Delete this question?')) return;
+          questions=questions.filter(x=>x.id!==q.id); saveQuestions(questions); renderList(); renderAdminList(); toast('Deleted','warn',900);
+        });
+      });
+    }
+
+    $('btn-export').addEventListener('click', ()=>{
+      const data={questions,wrongSubmissions}; const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+      const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download='quiz_export.json'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+    });
+
+    $('btn-import').addEventListener('click', ()=>{
+      const raw=prompt('Paste JSON to import (questions + wrongSubmissions)'); if(!raw) return;
+      try{
+        const parsed=JSON.parse(raw);
+        if(Array.isArray(parsed.questions)) questions=parsed.questions;
+        if(Array.isArray(parsed.wrongSubmissions)) wrongSubmissions=parsed.wrongSubmissions;
+        saveQuestions(questions); saveWrongs(wrongSubmissions); renderList(); renderAdminList(); toast('Imported','success',1200);
+      }catch(e){ toast('Invalid JSON','error',1400); }
+    });
+
+    $('btn-wipe').addEventListener('click', ()=>{
+      if(!confirm('ลบข้อมูลทั้งหมดจริงหรือไม่?')) return;
+      questions=[]; wrongSubmissions=[]; saveQuestions(questions); saveWrongs(wrongSubmissions); renderList(); renderAdminList(); toast('All wiped','warn',1200);
+    });
+
+    renderList();
+    window.__quiz={questions,wrongSubmissions,saveQuestions,saveWrongs,renderList,renderAdminList};
+  </script>
+</body>
+</html>
