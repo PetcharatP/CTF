@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Quiz — Dark Single Input</title>
+  <title>Quiz — Network by Reventhanz</title>
   <style>
     :root{
       --bg:#0b1020;
@@ -136,8 +136,8 @@
   <div style="max-width:1100px;margin:0 auto;padding:0 18px;">
     <header>
       <div>
-        <h1>Quiz — Dark Mode</h1>
-        <div class="muted">พิมพ์คำตอบที่ช่องด้านบนแล้วกด Submit เพื่อเช็คคำตอบทั้งหมด</div>
+        <h1>Quiz — Network by Reventhanz</h1>
+        <div class="muted">With help from D.I. Lestrade, Holmes acquires logs from a compromised MSP connected to the city’s financial core. The MSP’s AI servicedesk bot looks to have been manipulated into leaking remote access keys — an old trick of Moriarty’s.</div>
       </div>
       <div>
         <button id="btn-admin-toggle" class="btn btn-muted">Admin</button>
@@ -149,7 +149,7 @@
       <main class="card">
         <div style="display:flex;flex-direction:column;">
           <div class="answer-area">
-            <input id="global-answer" placeholder="พิมพ์คำตอบเดียว แล้วกด Submit — คำตอบจะถูกตรวจกับทุกข้อ" autocomplete="off" />
+            <input id="global-answer" placeholder="Submit flags & press Enter" autocomplete="off" />
             <button id="btn-submit" class="btn btn-primary">Submit</button>
             <button id="btn-reset-highlights" class="btn btn-muted" title="ล้างสถานะคำตอบถูก">Reset</button>
           </div>
@@ -210,26 +210,6 @@
         return false;
     }
     });
-
-    // Disable devtools
-    function disableDevTools() {
-    if (window.devtools?.isOpen || window.devtools?.orientation) {
-        window.location.href = 'about:blank';
-    }
-    }
-
-    // Check for DevTools
-    setInterval(disableDevTools, 1000);
-
-    // Additional protection against dev tools
-    (function() {
-    let devtools = function() {};
-    devtools.toString = function() {
-        window.location.href = 'about:blank';
-    }
-    console.log('%c', devtools);
-    })();
-
     // Clear console
     console.clear();
     // Disable console.log and other console methods
