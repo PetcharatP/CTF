@@ -29,15 +29,34 @@
       -moz-osx-font-smoothing:grayscale;
     }
 
-    .container{
-      max-width:1100px;
-      margin:0 auto;
-      display:grid;
-      grid-template-columns:1fr 360px;
-      gap:18px;
-      align-items:start;
+    .container {
+    max-width: 1100px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 1fr 200px 360px;
+    gap: 18px;
+    align-items: start;
+    }
+    .scoreboard {
+    background: linear-gradient(180deg, rgba(255,255,255,0.02), transparent);
+    border: 1px solid rgba(255,255,255,0.03);
+    padding: 16px;
+    border-radius: 12px;
+    box-shadow: 0 6px 24px rgba(2,6,23,0.6);
+    height: fit-content;
     }
 
+    .score-title {
+    font-size: 14px;
+    color: var(--muted);
+    margin-bottom: 10px;
+    }
+
+    .score-value {
+    font-size: 24px;
+    font-weight: bold;
+    color: var(--success);
+    }
     header{
       grid-column:1/-1;
       display:flex;
@@ -127,8 +146,17 @@
     .small-btn{ padding:6px 8px; border-radius:8px; font-size:13px; }
 
     @media (max-width:980px){
-      .container{ grid-template-columns:1fr; }
-      header{ flex-direction:column; align-items:flex-start; gap:10px; }
+    .container{ 
+        grid-template-columns:1fr; 
+    }
+    header{ 
+        flex-direction:column; 
+        align-items:flex-start; 
+        gap:10px; 
+    }
+    .scoreboard {
+        order: -1;
+    }
     }
   </style>
 </head>
@@ -157,7 +185,11 @@
           <div id="question-list" class="q-list"></div>
         </div>
       </main>
-
+    <!-- Scoreboard -->
+        <aside class="scoreboard">
+        <div class="score-title">Score</div>
+        <div class="score-value" id="score-big">0/10</div>
+        </aside>
       <!-- ADMIN PANEL (hidden) -->
       <aside class="card" id="admin-panel" style="display:none;">
         <div class="admin-header">
@@ -187,7 +219,6 @@
       </aside>
     </div>
   </div>
-
   <!-- toast -->
   <div id="toast-container" style="display:block;pointer-events:none"></div>
 
@@ -249,7 +280,13 @@
     let wrongSubmissions = loadWrongs();
 
     function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]); }
-
+    function updateScoreDisplay() {
+    const totalQuestions = questions.length;
+    const solvedQuestions = questions.filter(q => q.solved).length;
+    $('score-big').textContent = `${solvedQuestions}/${totalQuestions}`;
+    localStorage.setItem('quiz_score', solvedQuestions); // บันทึกคะแนนลง localStorage
+    }
+    
     function renderList(){
     const list = $('question-list');
     list.innerHTML = '';
@@ -273,6 +310,15 @@
         list.appendChild(item);
     });
     }
+    function initScore() {
+    const totalQuestions = questions.length;
+    const solvedQuestions = questions.filter(q => q.solved).length;
+    $('score-big').textContent = `${solvedQuestions}/${totalQuestions}`;
+    }
+
+    renderList();
+    initScore(); // เรียกใช้ฟังก์ชันเพื่อแสดงคะแนนเริ่มต้น
+    window.__quiz={questions,wrongSubmissions,saveQuestions,saveWrongs,renderList,renderAdminList};
 
     function toast(text,type='success',duration=2200){
       const container=$('toast-container'); const div=document.createElement('div');
@@ -305,6 +351,7 @@
       if(matched){
         matched.submissions.push(value); matched.solved=true;
         saveQuestions(questions); renderList();
+        updateScoreDisplay();
         toast('Answer Correct!','success',2000);
       } else {
         wrongSubmissions.push(value); saveWrongs(wrongSubmissions);
@@ -315,7 +362,9 @@
 
     $('btn-reset-highlights').addEventListener('click', ()=>{
       questions.forEach(q=>{ q.solved=false; q.submissions=[]; });
-      wrongSubmissions=[]; saveQuestions(questions); saveWrongs(wrongSubmissions); renderList(); toast('Reset done','warn',1200);
+      wrongSubmissions=[]; saveQuestions(questions); saveWrongs(wrongSubmissions); renderList();
+      updateScoreDisplay();
+    toast('Reset done','warn',1200);
     });
 
     // ADMIN panel
